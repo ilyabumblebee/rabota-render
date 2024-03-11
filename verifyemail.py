@@ -2,23 +2,11 @@ import requests
 import json
 
 
-# headers = {
-#     "accept": "*/*",
-#     "accept-language": "en-US,en;q=0.9",
-#     "content-type": "application/json",
-#     "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\"",
-#     "sec-ch-ua-mobile": "?0",
-#     "sec-ch-ua-platform": "\"Windows\"",
-#     "sec-fetch-dest": "empty",
-#     "sec-fetch-mode": "cors",
-#     "sec-fetch-site": "same-site"
-# }
-
-def verify_email(token):
+def verify_email(session, token):
     data = {
         "operationName": "verifyEmail",
         "variables": {
-            "token": "3DZfB5G3Vzci1jbm5pZjZpMWhibHM3MzlsOXQwZwU_NGNSRNoJAHmgj78q706w9RHiKea77SL1SAUVznpK"
+            "token": token
         },
         "query": """
         mutation verifyEmail($token: String!) {
@@ -60,4 +48,5 @@ def verify_email(token):
         }
         """
     }
-    response = requests.post("https://api.render.com/graphql", json=data)
+    response = session.post("https://api.render.com/graphql", json=data)
+    return response

@@ -30,23 +30,19 @@ def get_confirmation_url(email, password):
 
     token = get_auth_token()
     if not token:
-        print("1")
         return None
 
     messages = get_messages(token)
     message_id = find_message_id_by_subject(messages)
     if not message_id:
-        print("2")
         return None
 
     message = get_message_by_id(token, message_id)
     if not message:
-        print("3")
         return None
 
     message_content = message.get('text') or message.get('html')
     if not message_content:
-        print("4")
         return None
 
     urls = re.findall(r'https://click\.pstmrk\.it/3ts/[^\s"]+', message_content)

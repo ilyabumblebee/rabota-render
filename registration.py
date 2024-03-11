@@ -54,5 +54,4 @@ def sign_up_user(session, email, password, captchaToken):
             response_json["data"]["signUp"]["user"].get("id") and
             response_json["data"]["signUp"]["user"].get("email") == email):
             return 200, session
-    print(response.text)
     return 429, session
