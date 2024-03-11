@@ -5,6 +5,7 @@ import time
 import requests
 from faker import Faker
 from bs4 import BeautifulSoup
+from urllib.parse import unquote
 from hcaptcha import solve_captcha
 from registration import sign_up_user
 from mailtm import get_confirmation_url
@@ -48,7 +49,7 @@ def main(filename, sitekey, extracted):
             token = solve_captcha(sitekey)
 
             if token:
-                code, session = sign_up_user(session, email, token)
+                code, session = sign_up_user(session, email, password, token)
             else:
                 print("captcha_token not defined")
             if code == 429:
@@ -58,13 +59,17 @@ def main(filename, sitekey, extracted):
                 print(f"Skipping account {email} due to server error.")
                 break
             elif code == 200:
-                time.sleep(10)
-                confirmation_url = get_confirmation_url(email, password)
-                print(confirmation_url)
+                attempts = 0
+                confirmation_url = None
+                while confirmation_url is None and attempts < 10:
+                    time.sleep(10)  # Wait for 10 seconds before trying again
+                    confirmation_url = get_confirmation_url(email, password)
+                    attempts += 1
                 if confirmation_url is not None:
-                    response = session.get(confirmation_url)
+                    email_token = re.search(r"token=([^/&]+)", unquote(confirmation_url))
+                    if email_token:
+                        
                     if response.status_code == 200:
-                        soup = BeautifulSoup(response.content, 'html.parser')
                         print(f"Verification successful for {email}")
                     else:
                         print(f"Error following verification URL for {email}")

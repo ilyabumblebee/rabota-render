@@ -1,7 +1,7 @@
 import requests
 
 
-def sign_up_user(session, email, captchaToken):
+def sign_up_user(session, email, password, captchaToken):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
@@ -11,7 +11,7 @@ def sign_up_user(session, email, captchaToken):
         "variables": {
             "signup": {
                 "email": email,
-                "password": email,
+                "password": password,
                 "newsletterOptIn": False,
                 "hcaptchaToken": captchaToken
             }
