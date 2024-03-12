@@ -26,6 +26,8 @@ password = config['password']
 host = config['host']
 port = config['port']
 
+service = config['email_service']
+
 hcaptcha_sitekey = config['hcaptcha_sitekey']
 
 def extract_emails(filename):
@@ -44,7 +46,7 @@ def toggle_airplane_mode():
     logging.info("airplane mode toggled successfully...")
 
 def main(filename, sitekey, conn):
-    emails = fetch_emails(conn)
+    emails = fetch_emails(conn, service)
     for email_pass in emails:
         email, password = email_pass
 
