@@ -4,14 +4,13 @@ import json
 import time
 import logging
 import requests
-from faker import Faker
 from bs4 import BeautifulSoup
 from urllib.parse import unquote
 from hcaptcha import solve_captcha
 from verifyemail import verify_email
 from registration import sign_up_user
 from mailtm import get_confirmation_url
-
+from db import get_db_connection, fetch_emails, update_registration_status
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -21,10 +20,13 @@ logging.basicConfig(
 with open('config.json', 'r') as file:
     config = json.load(file)
 
-filename = config['email_file']
-hcaptcha_sitekey = config['hcaptcha_sitekey']
+dbname = config['dbname']
+user = config['user']
+password = config['password']
+host = config['host']
+port = config['port']
 
-fake = Faker()
+hcaptcha_sitekey = config['hcaptcha_sitekey']
 
 def extract_emails(filename):
     results = []
@@ -39,27 +41,24 @@ def toggle_airplane_mode():
     time.sleep(0.25)
     os.system("adb shell cmd connectivity airplane-mode disable")
     time.sleep(5)
-    logger.info("airplane mode toggled successfully...")
+    logging.info("airplane mode toggled successfully...")
 
-def main(filename, sitekey, extracted):
-    for email_pass in extracted:
-        email, password = email_pass.split(':')
-        name = fake.name()
-        
+def main(filename, sitekey, conn):
+    emails = fetch_emails(conn)
+    for email_pass in emails:
+        email, password = email_pass
+
         while True:
             toggle_airplane_mode()
-
             session = requests.Session()
-
             token = solve_captcha(sitekey)
-
             if token:
                 code, session = sign_up_user(session, email, password, token)
             else:
                 break
             if code == 429:
-                toggle_airplane_mode()
-                continue
+                logging.error(f"registration error for {email}")
+                break
             elif code == 200:
                 attempts = 0
                 confirmation_url = None
@@ -72,10 +71,13 @@ def main(filename, sitekey, extracted):
                     if email_token:
                         response = verify_email(session, email_token.group(1))
                     if response.status_code == 200:
-                        logger.info(f"registration successful for {email}")
+                        logging.info(f"registration successful for {email}")
                     else:
-                        logger.error(f"registration error for {email}")
+                        logging.error(f"registration error for {email}")
+
+                update_registration_status(conn, email)
+                logging.info(f"updated registration status for {email}")
                 break
 
-extracted = extract_emails(filename)
-main(filename, hcaptcha_sitekey, extracted)
+conn = get_db_connection(dbname, user, password, host, port)
+main(filename, hcaptcha_sitekey, conn)
