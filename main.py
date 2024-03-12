@@ -49,6 +49,7 @@ def main(sitekey, dbname, user, dbpassword, host, port):
     init_conn = get_db_connection(dbname, user, dbpassword, host, port)
     emails = fetch_emails(init_conn, service)
     logging.info("database connection successful")
+    init_conn.close()
     for email_pass in emails:
         email, password = email_pass
 

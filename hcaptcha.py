@@ -3,6 +3,7 @@ import time
 import webview
 import logging
 import threading
+import pygetwindow as gw
 from flask import Flask, request, render_template_string
 
 
@@ -68,12 +69,20 @@ def solve_captcha(sitekey):
     def run_flask_app():
         app.run(port=5000)
 
+    def focus_window(title):
+        time.sleep(3)  # Give the window a moment to create
+        try:
+            win = gw.getWindowsWithTitle(title)[0] 
+            win.activate()
+        except:
+            pass
+
     def destroy(window):
         start_time = time.time()
         global captcha_token
         while not captcha_token:
             time.sleep(0.1)
-            if time.time() - start_time > 15:  # 15 seconds timeout
+            if time.time() - start_time > 25:  # 25 seconds timeout
                 break
         window.destroy()
 
@@ -81,7 +90,12 @@ def solve_captcha(sitekey):
     flask_thread.start()
 
     # Create and start the webview window
-    window = webview.create_window('Solve Captcha', 'http://127.0.0.1:5000', width=750, height=750)
+    window_title = 'Solve Captcha'
+    window = webview.create_window(window_title, 'http://127.0.0.1:5000', width=750, height=750)
+
+    focus_thread = threading.Thread(target=focus_window, args=(window_title,))
+    focus_thread.start()
+
     webview.start(destroy, window)
 
     return captcha_token
