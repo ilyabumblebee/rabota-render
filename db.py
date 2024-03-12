@@ -1,4 +1,3 @@
-import json
 import logging
 import psycopg2
 
@@ -18,7 +17,6 @@ def get_db_connection(dbname, user, password, host, port):
             host=host,
             port=port
         )
-        logging.info("database connection successful")
         return conn
     except Exception as e:
         logging.error("database connection failed: %s", str(e))
@@ -45,14 +43,28 @@ def fetch_emails(conn, service):
 def update_registration_status(conn, email):
     try:
         with conn.cursor() as cur:
-            # Update the registered_in JSONB to include {"render.com": true}
             cur.execute("""
                 UPDATE emails
-                SET registered_in = jsonb_set(registered_in, '{render.com}', 'true')
+                SET registered_in = COALESCE(registered_in, '{}') || '{"render.com": true}'
                 WHERE email = %s
             """, (email,))
             conn.commit()
             return 201
     except Exception as e:
         logging.error(f"an error occurred: {e}")
+        return 500
+
+# Function 3: Append account to accounts table
+def append_account(conn, email, password):
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO accounts (email, password, service)
+                VALUES (%s, %s, 'render.com')
+                ON CONFLICT (email) DO NOTHING
+            """, (email, password))
+            conn.commit()
+            return 201
+    except Exception as e:
+        logging.error(f"An error occurred while appending account: {e}")
         return 500

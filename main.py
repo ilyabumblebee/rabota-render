@@ -10,7 +10,7 @@ from hcaptcha import solve_captcha
 from verifyemail import verify_email
 from registration import sign_up_user
 from mailtm import get_confirmation_url
-from db import get_db_connection, fetch_emails, update_registration_status
+from db import get_db_connection, fetch_emails, update_registration_status, append_account
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -45,8 +45,10 @@ def toggle_airplane_mode():
     time.sleep(5)
     logging.info("airplane mode toggled successfully...")
 
-def main(filename, sitekey, conn):
-    emails = fetch_emails(conn, service)
+def main(sitekey, dbname, user, dbpassword, host, port):
+    init_conn = get_db_connection(dbname, user, dbpassword, host, port)
+    emails = fetch_emails(init_conn, service)
+    logging.info("database connection successful")
     for email_pass in emails:
         email, password = email_pass
 
@@ -54,6 +56,7 @@ def main(filename, sitekey, conn):
             toggle_airplane_mode()
             session = requests.Session()
             token = solve_captcha(sitekey)
+            prim_conn = get_db_connection(dbname, user, dbpassword, host, port)
             if token:
                 code, session = sign_up_user(session, email, password, token)
             else:
@@ -74,12 +77,17 @@ def main(filename, sitekey, conn):
                         response = verify_email(session, email_token.group(1))
                     if response.status_code == 200:
                         logging.info(f"registration successful for {email}")
+                        status = append_account(prim_conn, email, password)
+                        if status == 201:
+                            logging.info(f"account for {email} appended successfully")
                     else:
                         logging.error(f"registration error for {email}")
 
-                update_registration_status(conn, email)
-                logging.info(f"updated registration status for {email}")
                 break
 
-conn = get_db_connection(dbname, user, password, host, port)
-main(filename, hcaptcha_sitekey, conn)
+        status = update_registration_status(prim_conn, email)
+        if status==201:
+            logging.info(f"updated registration status for {email}")
+        prim_conn.close()
+
+main(hcaptcha_sitekey, dbname, user, password, host, port)
