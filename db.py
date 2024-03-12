@@ -30,10 +30,10 @@ def fetch_emails(conn, service):
                 SELECT email, password FROM emails 
                 WHERE 
                     (banned IS FALSE OR banned IS NULL) AND
-                    (registered_in->>%s IS NULL OR registered_in->>%s = 'false') AND
+                    (registered_in->>'render.com' IS NULL OR registered_in->>'render.com' = 'false') AND
                     service = %s
                 LIMIT 1000
-            """, (service, service, service))
+            """, (service,))
             records = cur.fetchall()
             return records
     except Exception as e:
