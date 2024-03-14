@@ -9,7 +9,8 @@ from urllib.parse import unquote
 from hcaptcha import solve_captcha
 from verifyemail import verify_email
 from registration import sign_up_user
-from mailtm import get_confirmation_url
+from imap import get_confirmation_url_imap
+from mailtm import get_confirmation_url_mailtm
 from db import get_db_connection, fetch_emails, update_registration_status, append_account
 
 logging.basicConfig(
@@ -25,9 +26,9 @@ user = config['user']
 password = config['password']
 host = config['host']
 port = config['port']
-
-service = config['email_service']
-
+services = config['email_services']
+imap_url = config.get('imap_url', '')
+use_imap = config.get('use_imap', False)
 hcaptcha_sitekey = config['hcaptcha_sitekey']
 
 def extract_emails(filename):
@@ -47,7 +48,7 @@ def toggle_airplane_mode():
 
 def main(sitekey, dbname, user, dbpassword, host, port):
     init_conn = get_db_connection(dbname, user, dbpassword, host, port)
-    emails = fetch_emails(init_conn, service)
+    emails = fetch_emails(init_conn, services)
     logging.info("database connection successful")
     init_conn.close()
     for email_pass in emails:
@@ -70,7 +71,10 @@ def main(sitekey, dbname, user, dbpassword, host, port):
                 confirmation_url = None
                 while confirmation_url is None and attempts < 10:
                     time.sleep(10)
-                    confirmation_url = get_confirmation_url(email, password)
+                    if use_imap:
+                        confirmation_url = get_confirmation_url_imap(imap_url, email, password)
+                    else:
+                        confirmation_url = get_confirmation_url_mailtm(email, password)                    
                     attempts += 1
                 if confirmation_url is not None:
                     email_token = re.search(r"token=([^/&]+)", unquote(confirmation_url))

@@ -2,7 +2,7 @@ import requests
 import re
 
 
-def get_confirmation_url(email, password):
+def get_confirmation_url_mailtm(email, password):
     def get_auth_token():
         url = "https://api.mail.tm/token"
         payload = {"address": email, "password": password}

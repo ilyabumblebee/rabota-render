@@ -23,7 +23,7 @@ def get_db_connection(dbname, user, password, host, port):
         return None
 
 # Function 1: Fetch email:password from emails
-def fetch_emails(conn, service):
+def fetch_emails(conn, services):
     try:
         with conn.cursor() as cur:
             cur.execute("""
@@ -31,9 +31,9 @@ def fetch_emails(conn, service):
                 WHERE 
                     (banned IS FALSE OR banned IS NULL) AND
                     (registered_in->>'render.com' IS NULL OR registered_in->>'render.com' = 'false') AND
-                    service = %s
+                    service = ANY(%s)
                 LIMIT 1000
-            """, (service,))
+            """, (services,))
             records = cur.fetchall()
             return records
     except Exception as e:
