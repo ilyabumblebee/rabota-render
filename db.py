@@ -32,6 +32,7 @@ def fetch_emails(conn, services):
                     (banned IS FALSE OR banned IS NULL) AND
                     (registered_in->>'render.com' IS NULL OR registered_in->>'render.com' = 'false') AND
                     service = ANY(%s)
+                ORDER BY RANDOM()
                 LIMIT 1000
             """, (services,))
             records = cur.fetchall()
