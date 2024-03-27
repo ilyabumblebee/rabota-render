@@ -6,11 +6,12 @@ import logging
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import unquote
-from hcaptcha import solve_captcha
 from verifyemail import verify_email
 from registration import sign_up_user
 from imap import get_confirmation_url_imap
 from mailtm import get_confirmation_url_mailtm
+from hcaptcha_manual import solve_captcha_manual
+from hcaptcha_service import solve_captcha_service
 from db import get_db_connection, fetch_emails, update_registration_status, append_account
 
 logging.basicConfig(
@@ -30,6 +31,8 @@ services = config['email_services']
 imap_url = config.get('imap_url', '')
 use_imap = config.get('use_imap', False)
 hcaptcha_sitekey = config['hcaptcha_sitekey']
+hcaptcha_mode = config.get('hcaptcha_mode', 1)
+anticaptcha_apikey = config['anticaptcha_apikey']
 
 def extract_emails(filename):
     results = []
@@ -46,7 +49,7 @@ def toggle_airplane_mode():
     time.sleep(5)
     logging.info("airplane mode toggled successfully...")
 
-def main(sitekey, dbname, user, dbpassword, host, port):
+def main(sitekey, hcaptcha_mode, anticaptcha_apikey, dbname, user, dbpassword, host, port):
     init_conn = get_db_connection(dbname, user, dbpassword, host, port)
     emails = fetch_emails(init_conn, services)
     logging.info("database connection successful")
@@ -57,7 +60,10 @@ def main(sitekey, dbname, user, dbpassword, host, port):
         while True:
             toggle_airplane_mode()
             session = requests.Session()
-            token = solve_captcha(sitekey)
+            if hcaptcha_mode == 0:
+                token = solve_captcha_service(anticaptcha_apikey, sitekey)
+            else:
+                token = solve_captcha_manual(sitekey)
             prim_conn = get_db_connection(dbname, user, dbpassword, host, port)
             if token:
                 code, session = sign_up_user(session, email, password, token)
@@ -95,4 +101,4 @@ def main(sitekey, dbname, user, dbpassword, host, port):
             logging.info(f"updated registration status for {email}")
         prim_conn.close()
 
-main(hcaptcha_sitekey, dbname, user, password, host, port)
+main(hcaptcha_sitekey, hcaptcha_mode, anticaptcha_apikey, dbname, user, password, host, port)

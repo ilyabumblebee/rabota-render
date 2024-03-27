@@ -11,7 +11,7 @@ from flask import Flask, request, render_template_string
 logging.getLogger('werkzeug').setLevel(logging.CRITICAL)
 sys.modules['flask.cli'].show_server_banner = lambda *x: None
 
-def solve_captcha(sitekey):
+def solve_captcha_manual(sitekey):
     global captcha_token
     captcha_token = None
 
